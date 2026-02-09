@@ -1,83 +1,103 @@
-# Vercel Deployment Guide
+# Vercel デプロイ & 納品ガイド
 
-To deploy "Interview Analyzer" to Vercel, please follow these steps.
+このアプリケーションを Vercel にデプロイし、納品するための手順書です。
 
-## ⚠️ Important Database Note
-This application currently uses **SQLite** (`dev.db`).
-Vercel's standard environment (Serverless) **does not support persistent SQLite files**.
-If you deploy as is, the database will be reset every time the server restarts or redeploys, and your uploaded data will disappear.
-
-### Recommended Solution: Use Vercel Postgres
-For a persistent production App on Vercel, we recommend switching to **Vercel Postgres**.
-
-## Steps to Deploy
-
-### 1. Push to GitHub
-Ensure your code is pushed to your GitHub repository:
-https://github.com/yujiro3440923/InterviewAnalyzer.git
-
-### 2. Create Vercel Project
-1. Log in to [Vercel](https://vercel.com).
-2. Click "Add New..." -> "Project".
-3. Import `InterviewAnalyzer` from your GitHub.
-
-### 3. Setup Vercel Postgres (Database)
-1. In the Vercel Project Dashboard, go to **Storage**.
-2. Click **Connect Database** -> **Create New** -> **Vercel Postgres**.
-3. Accept the terms and create the database.
-4. This will automatically add environment variables (like `POSTGRES_PRISMA_URL`) to your project settings.
-
-### 4. Update Project for Postgres (Required Changes)
-
-You need to modify the code slightly to support Postgres instead of SQLite.
-
-**A. Update `prisma/schema.prisma`**
-Change the `datasource` provider:
-```prisma
-datasource db {
-  provider = "postgresql" // Changed from "sqlite"
-  url      = env("POSTGRES_PRISMA_URL") // Vercel provides this automatically
-  directUrl = env("POSTGRES_URL_NON_POOLING") // Optional, but good for migrations
-}
-```
-
-**B. Update Migrations**
-Since you are switching databases, you should delete the old `prisma/migrations` folder locally and re-create migrations for Postgres.
-
-```bash
-# Delete old migrations
-rm -rf prisma/migrations
-
-# Generate new migration for Postgres
-npx prisma migrate dev --name init_postgres
-```
-*Note: You need a local Postgres running to test this, or you can just commit the schema change and let Vercel handle it if you only care about production.*
-
-**C. Commit and Push Changes**
-Push the changes to GitHub. Vercel will automatically redeploy.
-
-**D. Run Migrations on Vercel**
-Add a build command instruction or use the Vercel Console to run migrations.
-Usually, putting `"postinstall": "prisma generate"` in `package.json` helps generate the client.
-To create tables in Vercel Postgres, you can run this command locally (connecting to Vercel DB) or set up a Command in Vercel.
-
-Simplest way:
-1. Get the connection string from Vercel.
-2. Run `POSTGRES_PRISMA_URL="your_vercel_db_string" npx prisma migrate deploy` locally.
-
-### 5. Check "Kuromoji" Dictionary
-This app uses `kuromoji` dictionary files located in `public/dict`.
-Next.js on Vercel serves files checks `public` folder automatically, so this **should work** without changes.
+## ⚠️ 重要：データベースについて
+現在のコードは **SQLite** (`dev.db`) を使用しています。
+Vercel の標準環境（サーバーレス）では、SQLite のファイルは保存されません（デプロイや再起動のたびにデータが消えます）。
+**本番環境として Vercel で運用する場合は、必ず `Vercel Postgres` (または Supabase, PlanetScale 等) への切り替えが必要です。**
 
 ---
 
-## Summary of Operations required by You
-If you want to keep it strictly as **SQLite** for a demo (understanding data will be lost on redeploy):
-1. Just push to GitHub.
-2. Deploy on Vercel.
-3. It will work, but uploaded data will vanish eventually.
+## 手順 1. GitHub へのプッシュ (完了済み)
+ソースコードは以下のリポジトリにアップロードされています。
+URL: https://github.com/yujiro3440923/InterviewAnalyzer.git
 
-If you want **Persistence (Real App)**:
-1. Create Vercel Postgres database.
-2. Update `schema.prisma` provider to `postgresql`.
-3. Push changes.
+---
+
+## 手順 2. Vercel プロジェクトの作成
+1. [Vercel](https://vercel.com) にログインします。
+2. "Add New..." -> "Project" をクリックします。
+3. GitHub アカウントを連携し、`InterviewAnalyzer` リポジトリをインポートします。
+4. **Build Command** や **Output Directory** はデフォルトのままでOKです。
+5. "Deploy" をクリックします。
+   - ※ 初回デプロイは失敗する可能性があります（データベース設定がまだのため）。
+
+---
+
+## 手順 3. Vercel Postgres (データベース) のセットアップ
+データの永続化のため、Vercel 上でデータベースを作成します。
+
+1. 作成した Vercel プロジェクトのダッシュボードへ移動します。
+2. 上部メニューの **Storage** をクリックします。
+3. **Connect Database** -> **Create New** -> **Vercel Postgres** を選択します。
+4. 利用規約に同意し、Database Name (例: `interview-db`) を入力して作成します。
+5. Region (リージョン) は `Japan (Tokyo)` などを推奨しますが、Vercel Functions のリージョンと近い場所を選んでください。
+6. 作成が完了すると、自動的にプロジェクトの **Environment Variables** (環境変数) に `POSTGRES_PRISMA_URL` などが追加されます。
+
+---
+
+## 手順 4. コードの修正 (Postgres 対応)
+ローカルのコードを修正し、SQLite から Postgres に切り替えて再度プッシュする必要があります。
+
+### A. `prisma/schema.prisma` の変更
+`prisma/schema.prisma` ファイルを開き、`datasource` ブロックを以下のように書き換えます。
+
+```prisma
+// 変更前 (SQLite)
+// datasource db {
+//   provider = "sqlite"
+//   url      = env("DATABASE_URL")
+// }
+
+// 変更後 (Postgres)
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL") // Connection Pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // Direct connection
+}
+```
+
+### B. マイグレーションファイルの再生成
+データベースの種類が変わるため、既存のマイグレーションフォルダを削除して作り直します。
+ターミナルで以下を実行してください（※ローカル環境）。
+
+```bash
+# 既存のマイグレーションを削除
+rm -rf prisma/migrations
+
+# (重要) ローカルでPostgres環境がない場合、マイグレーション生成のみ行います
+# そのため、.env に一時的なダミーURLを入れるか、または --skip-seed 等を使いますが、
+# 一番簡単なのは「スキーマ変更だけコミットして、Vercel上でマイグレーションを実行する」方法です。
+```
+※ もしローカルに Postgres がない場合、`npx prisma migrate dev` はエラーになります。
+その場合は、**`prisma/schema.prisma` の変更だけを行ってコミット・プッシュしてください。**
+その後、Vercel の管理画面 (Settings > Build & Development Settings) の **Build Command** を以下のように変更します。
+
+```bash
+prisma generate && prisma migrate deploy && next build
+```
+
+これにより、デプロイ時に自動的にデータベースの更新が行われます。
+
+---
+
+## 手順 5. 辞書ファイルの確認 (Kuromoji)
+このアプリは `public/dict` フォルダにある辞書ファイルを使用します。
+これは Next.js の仕様上、Vercel でも問題なく読み込まれますので、追加の設定は不要です。
+
+---
+
+## 納品時の注意点 (クライアントに渡す場合)
+
+もしあなたがクライアントにこのシステムを納品する場合、以下の点を確認してください。
+
+1. **GitHub リポジトリの権限**
+   - クライアントの GitHub アカウントにリポジトリを譲渡 (Transfer) するか、招待してください。
+
+2. **Vercel アカウント**
+   - クライアントの Vercel アカウントでプロジェクトを作成し直す必要があります。
+   - 上記の「手順3 (データベース)」もクライアント側の環境で実施する必要があります。
+
+3. **環境変数**
+   - データベースの接続情報 (`POSTGRES_PRISMA_URL` 等) は機密情報です。`.env` ファイルは GitHub に上がらないようになっていますので、Vercel の管理画面で設定されていることを確認してください。
