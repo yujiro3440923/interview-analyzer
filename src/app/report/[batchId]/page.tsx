@@ -6,6 +6,8 @@ import { TrendChart } from './components/TrendChart';
 import { KeywordsList } from './components/KeywordsList';
 import { PersonList } from './components/PersonList';
 
+export const dynamic = 'force-dynamic';
+
 interface PageProps {
     params: {
         batchId: string;
