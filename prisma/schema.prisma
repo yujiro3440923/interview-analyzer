@@ -1,0 +1,52 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model UploadBatch {
+  id        Int      @id @default(autoincrement())
+  filename  String
+  uploadDate DateTime @default(now())
+  groupName String?  // Extracted from filename or sheet name, customizable
+  
+  people    Person[]
+  records   InterviewRecord[]
+}
+
+model Person {
+  id        Int      @id @default(autoincrement())
+  originalId String? // ID from the excel if available
+  name      String
+  
+  batchId   Int
+  batch     UploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  
+  records   InterviewRecord[]
+
+  @@unique([batchId, name]) // Unique person per batch (assuming name is unique within a batch for MVP)
+}
+
+model InterviewRecord {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+  content   String   // The problem/consultation text
+  action    String?  // The response/solution text
+  
+  // Analysis Results
+  sentimentScore Float? // -1.0 to 1.0
+  topics         String? // JSON string: ["Health", "Work"]
+  keywords       String? // JSON string: [{"word": "pain", "count": 2}, ...]
+  
+  personId  Int
+  person    Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  
+  batchId   Int
+  batch     UploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+}
