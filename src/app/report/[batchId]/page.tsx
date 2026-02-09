@@ -9,9 +9,9 @@ import { PersonList } from './components/PersonList';
 export const dynamic = 'force-dynamic';
 
 interface PageProps {
-    params: {
+    params: Promise<{
         batchId: string;
-    };
+    }>;
 }
 
 // Helper to calculate stats

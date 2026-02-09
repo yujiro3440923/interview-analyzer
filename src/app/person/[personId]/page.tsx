@@ -5,9 +5,9 @@ import { User, Calendar, MessageSquare, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 interface PageProps {
-    params: {
+    params: Promise<{
         personId: string;
-    };
+    }>;
 }
 
 async function getPersonData(personId: number) {
