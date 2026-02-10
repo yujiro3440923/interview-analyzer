@@ -14,7 +14,7 @@ export function SummaryCards({ totalRecords, totalPeople, avgSentiment }: Summar
                     <FileText className="w-6 h-6" />
                 </div>
                 <div>
-                    <p className="text-sm text-slate-500 font-medium">総相談件数</p>
+                    <p className="text-sm text-slate-500 font-medium">Total Consultations</p>
                     <p className="text-2xl font-bold text-slate-900">{totalRecords}</p>
                 </div>
             </div>
@@ -24,7 +24,7 @@ export function SummaryCards({ totalRecords, totalPeople, avgSentiment }: Summar
                     <Users className="w-6 h-6" />
                 </div>
                 <div>
-                    <p className="text-sm text-slate-500 font-medium">対象人数</p>
+                    <p className="text-sm text-slate-500 font-medium">Active Members</p>
                     <p className="text-2xl font-bold text-slate-900">{totalPeople}</p>
                 </div>
             </div>
@@ -34,7 +34,7 @@ export function SummaryCards({ totalRecords, totalPeople, avgSentiment }: Summar
                     <Smile className="w-6 h-6" />
                 </div>
                 <div>
-                    <p className="text-sm text-slate-500 font-medium">平均センチメント</p>
+                    <p className="text-sm text-slate-500 font-medium">Avg. Sentiment</p>
                     <p className="text-2xl font-bold text-slate-900">
                         {avgSentiment > 0 ? '+' : ''}{avgSentiment.toFixed(2)}
                     </p>

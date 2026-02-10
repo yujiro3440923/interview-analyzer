@@ -6,12 +6,10 @@ import { TrendChart } from './components/TrendChart';
 import { KeywordsList } from './components/KeywordsList';
 import { PersonList } from './components/PersonList';
 
-export const dynamic = 'force-dynamic';
-
 interface PageProps {
-    params: Promise<{
+    params: {
         batchId: string;
-    }>;
+    };
 }
 
 // Helper to calculate stats
@@ -89,12 +87,12 @@ export default async function ReportPage(props: PageProps) {
         <div className="space-y-8">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-slate-900">{batch.groupName || '解析レポート'}</h1>
-                    <p className="text-slate-500">アップロード日: {format(new Date(batch.uploadDate), 'yyyy/MM/dd')}</p>
+                    <h1 className="text-3xl font-bold text-slate-900">{batch.groupName || 'Analysis Report'}</h1>
+                    <p className="text-slate-500">Uploaded on {format(new Date(batch.uploadDate), 'PPP')}</p>
                 </div>
                 <div className="text-right">
                     <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                        解析完了
+                        Analysis Complete
                     </span>
                 </div>
             </div>
@@ -107,17 +105,17 @@ export default async function ReportPage(props: PageProps) {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="bg-white p-6 rounded-xl shadow-sm border">
-                    <h3 className="font-semibold text-lg mb-4">相談件数の推移</h3>
+                    <h3 className="font-semibold text-lg mb-4">Consultation Trend</h3>
                     <TrendChart data={stats.trendData} />
                 </div>
                 <div className="bg-white p-6 rounded-xl shadow-sm border">
-                    <h3 className="font-semibold text-lg mb-4">頻出キーワード (Top 20)</h3>
+                    <h3 className="font-semibold text-lg mb-4">Frequent Keywords</h3>
                     <KeywordsList keywords={stats.topKeywords} />
                 </div>
             </div>
 
             <div className="bg-white p-6 rounded-xl shadow-sm border">
-                <h3 className="font-semibold text-lg mb-4">個人別データ一覧</h3>
+                <h3 className="font-semibold text-lg mb-4">Individual Records</h3>
                 <PersonList people={batch.people} />
             </div>
         </div>

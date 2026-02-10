@@ -8,7 +8,7 @@ interface TrendChartProps {
 
 export function TrendChart({ data }: TrendChartProps) {
     if (!data || data.length === 0) {
-        return <div className="h-64 flex items-center justify-center text-slate-400">データがありません</div>;
+        return <div className="h-64 flex items-center justify-center text-slate-400">No trend data available</div>;
     }
 
     return (

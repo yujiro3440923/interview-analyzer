@@ -6,7 +6,7 @@ interface KeywordsListProps {
 
 export function KeywordsList({ keywords }: KeywordsListProps) {
     if (!keywords || keywords.length === 0) {
-        return <div className="h-64 flex items-center justify-center text-slate-400">キーワードが見つかりません</div>;
+        return <div className="h-64 flex items-center justify-center text-slate-400">No keywords found</div>;
     }
 
     const maxCount = Math.max(...keywords.map(k => k.count), 1);

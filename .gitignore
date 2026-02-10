@@ -42,11 +42,6 @@ next-env.d.ts
 
 /src/generated/prisma
 
-# databases
+# SQLite
 *.db
-*.sqlite
-
-# user specific
-AppData/
-**/CapCut/
-**/Cache/
+*.db-journal

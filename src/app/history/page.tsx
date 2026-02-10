@@ -3,8 +3,6 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { FileText, Users, Calendar } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
-
 export default async function HistoryPage() {
     const batches = await prisma.uploadBatch.findMany({
         orderBy: { uploadDate: 'desc' },
@@ -17,7 +15,7 @@ export default async function HistoryPage() {
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">
-            <h1 className="text-3xl font-bold text-slate-900">解析履歴</h1>
+            <h1 className="text-3xl font-bold text-slate-900">Upload History</h1>
 
             <div className="grid gap-4">
                 {batches.map((batch) => (
@@ -33,7 +31,7 @@ export default async function HistoryPage() {
                                 <div className="text-right">
                                     <div className="flex items-center text-slate-500 text-sm gap-1">
                                         <Calendar className="w-4 h-4" />
-                                        {format(new Date(batch.uploadDate), 'yyyy/MM/dd HH:mm')}
+                                        {format(new Date(batch.uploadDate), 'PPP p')}
                                     </div>
                                 </div>
                             </div>
@@ -41,11 +39,11 @@ export default async function HistoryPage() {
                             <div className="mt-4 flex gap-6 text-sm text-slate-600">
                                 <div className="flex items-center gap-2">
                                     <FileText className="w-4 h-4 text-blue-500" />
-                                    <span>{batch._count.records} 件の相談</span>
+                                    <span>{batch._count.records} Consultations</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Users className="w-4 h-4 text-purple-500" />
-                                    <span>{batch._count.people} 人</span>
+                                    <span>{batch._count.people} People</span>
                                 </div>
                             </div>
                         </div>
@@ -54,9 +52,9 @@ export default async function HistoryPage() {
 
                 {batches.length === 0 && (
                     <div className="text-center py-12 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-                        <p className="text-slate-500">履歴が見つかりません。</p>
+                        <p className="text-slate-500">No upload history found.</p>
                         <Link href="/" className="text-blue-600 font-medium hover:underline mt-2 inline-block">
-                            最初のファイルをアップロードする
+                            Upload your first file
                         </Link>
                     </div>
                 )}
