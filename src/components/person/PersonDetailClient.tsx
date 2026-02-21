@@ -228,21 +228,34 @@ function CaseCard({ caseItem }: { caseItem: Case }) {
         <div style={{ padding: '14px 16px', background: 'var(--bg-secondary)', borderRadius: 10, border: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <select
-                        value={status}
-                        onChange={(e) => handleStatusChange(e.target.value)}
-                        disabled={isPending}
-                        style={{
-                            background: 'var(--bg-card)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: 8,
-                            padding: '6px 10px',
-                            color: 'var(--text-primary)',
-                            fontSize: 13,
-                        }}
-                    >
-                        {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                        {[
+                            { value: 'Open', label: '未対応', color: 'var(--accent-red)' },
+                            { value: 'InProgress', label: '対応中', color: 'var(--accent-blue)' },
+                            { value: 'Pending', label: '保留', color: 'var(--accent-yellow)' },
+                            { value: 'Resolved', label: '解決済', color: 'var(--accent-green)' }
+                        ].map((s) => (
+                            <button
+                                key={s.value}
+                                onClick={() => handleStatusChange(s.value)}
+                                disabled={isPending}
+                                style={{
+                                    padding: '4px 8px',
+                                    fontSize: 12,
+                                    fontWeight: status === s.value ? 700 : 500,
+                                    color: status === s.value ? '#1e293b' : 'var(--text-secondary)',
+                                    background: status === s.value ? s.color : 'transparent',
+                                    border: `1px solid ${status === s.value ? s.color : 'var(--border-color)'}`,
+                                    borderRadius: 6,
+                                    cursor: isPending ? 'not-allowed' : 'pointer',
+                                    opacity: isPending ? 0.5 : 1,
+                                    transition: 'all 0.2s',
+                                }}
+                            >
+                                {s.label}
+                            </button>
+                        ))}
+                    </div>
                     {caseItem.owner && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>担当: {caseItem.owner}</span>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

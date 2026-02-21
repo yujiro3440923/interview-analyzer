@@ -96,18 +96,35 @@ function KanbanCard({ caseItem, onStatusChange }: { caseItem: CaseItem; onStatus
                 {caseItem.batch.groupName}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <select
-                    value={caseItem.status}
-                    onChange={(e) => handleChange(e.target.value)}
-                    disabled={isPending}
-                    style={{
-                        background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
-                        borderRadius: 6, padding: '4px 8px', color: 'var(--text-primary)', fontSize: 12,
-                    }}
-                >
-                    {statuses.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    {[
+                        { value: 'Open', label: '未対応', color: 'var(--accent-red)' },
+                        { value: 'InProgress', label: '対応中', color: 'var(--accent-blue)' },
+                        { value: 'Pending', label: '保留', color: 'var(--accent-yellow)' },
+                        { value: 'Resolved', label: '解決済', color: 'var(--accent-green)' }
+                    ].map((s) => (
+                        <button
+                            key={s.value}
+                            onClick={() => handleChange(s.value)}
+                            disabled={isPending}
+                            style={{
+                                padding: '4px 8px',
+                                fontSize: 11,
+                                fontWeight: caseItem.status === s.value ? 700 : 500,
+                                color: caseItem.status === s.value ? '#1e293b' : 'var(--text-secondary)',
+                                background: caseItem.status === s.value ? s.color : 'transparent',
+                                border: `1px solid ${caseItem.status === s.value ? s.color : 'var(--border-color)'}`,
+                                borderRadius: 4,
+                                cursor: isPending ? 'not-allowed' : 'pointer',
+                                opacity: isPending ? 0.5 : 1,
+                                transition: 'all 0.2s',
+                            }}
+                        >
+                            {s.label}
+                        </button>
+                    ))}
+                </div>
 
                 <span style={{ fontSize: 11, color: days > 7 ? 'var(--accent-red)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
                     {days > 7 && <AlertTriangle size={10} />}
