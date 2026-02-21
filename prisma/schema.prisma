@@ -1,0 +1,102 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+model UploadBatch {
+  id          String   @id @default(cuid())
+  filename    String
+  uploadDate  DateTime @default(now())
+  groupName   String
+  recordCount Int      @default(0)
+  personCount Int      @default(0)
+  parsingLog  Json?
+  createdAt   DateTime @default(now())
+
+  persons Person[]
+  records InterviewRecord[]
+  cases   Case[]
+
+  @@index([groupName])
+  @@index([uploadDate])
+}
+
+model Person {
+  id          String    @id @default(cuid())
+  name        String
+  originalId  String?
+  startDate   DateTime?
+  riskScore   Float     @default(0)
+  riskTier    String    @default("Green")
+  riskFactors Json?
+  batchId     String
+  batch       UploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  records InterviewRecord[]
+  cases   Case[]
+
+  @@index([batchId])
+  @@index([name])
+  @@index([riskTier])
+}
+
+model InterviewRecord {
+  id                  String    @id @default(cuid())
+  date                DateTime?
+  staff               String?
+  content             String?   @db.Text
+  action              String?   @db.Text
+  textAll             String?   @db.Text
+  sentimentScore      Float?
+  sentimentConfidence Float?
+  sentimentEvidence   Json?
+  urgency             String    @default("Low")
+  categoryMain        String?
+  categoryFlags       Json?
+  keywords            Json?
+  personId            String?
+  person              Person?   @relation(fields: [personId], references: [id], onDelete: SetNull)
+  batchId             String
+  batch               UploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  createdAt           DateTime @default(now())
+
+  @@index([batchId])
+  @@index([personId])
+  @@index([date])
+  @@index([urgency])
+}
+
+model Case {
+  id               String    @id @default(cuid())
+  status           String    @default("Open")
+  owner            String?
+  nextFollowUpDate DateTime?
+  resolutionNote   String?   @db.Text
+  personId         String
+  person           Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
+  batchId          String
+  batch            UploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  relatedRecordIds Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([batchId])
+  @@index([personId])
+  @@index([status])
+}
+
+model Settings {
+  id            String   @id @default(cuid())
+  groupName     String   @unique
+  dict          Json?
+  sentimentDict Json?
+  thresholds    Json?
+  notifications Json?
+  updatedAt     DateTime @updatedAt
+}
