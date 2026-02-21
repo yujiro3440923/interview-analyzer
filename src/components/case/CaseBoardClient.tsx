@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { ClipboardList, User, Clock, AlertTriangle, ChevronRight } from 'lucide-react';
+import { ClipboardList, User, Clock, AlertTriangle, ChevronRight, Filter } from 'lucide-react';
 import { updateCaseStatus } from '@/actions/cases';
 
 interface CaseItem {
@@ -18,26 +18,62 @@ interface CaseItem {
 
 export default function CaseBoardClient({ cases: initialCases }: { cases: CaseItem[] }) {
     const [cases, setCases] = useState(initialCases);
+    const [selectedGroup, setSelectedGroup] = useState<string>('all');
+
+    const uniqueGroups = Array.from(new Set(initialCases.map(c => c.batch.groupName))).sort();
+
+    const filteredCases = selectedGroup === 'all'
+        ? cases
+        : cases.filter((c) => c.batch.groupName === selectedGroup);
+
     const statuses = ['Open', 'InProgress', 'Pending', 'Resolved'];
 
     const columns = statuses.map((status) => ({
         status,
         label: status === 'Open' ? '未対応' : status === 'InProgress' ? '対応中' : status === 'Pending' ? '保留' : '解決済み',
         color: status === 'Open' ? 'var(--accent-red)' : status === 'InProgress' ? 'var(--accent-blue)' : status === 'Pending' ? 'var(--accent-yellow)' : 'var(--accent-green)',
-        items: cases.filter((c) => c.status === status),
+        items: filteredCases.filter((c) => c.status === status),
     }));
 
     return (
         <div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>
-                <ClipboardList size={24} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
-                ケースボード
-            </h1>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: 32, fontSize: 15 }}>
-                未解決ケースの管理・ステータス更新
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
+                <div>
+                    <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>
+                        <ClipboardList size={24} style={{ display: 'inline', marginRight: 8, verticalAlign: 'middle' }} />
+                        ケースボード
+                    </h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 15 }}>
+                        未解決ケースの管理・ステータス更新
+                    </p>
+                </div>
 
-            {cases.length === 0 ? (
+                {uniqueGroups.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--bg-card)', padding: '8px 16px', borderRadius: 12, border: '1px solid var(--border-light)' }}>
+                        <Filter size={16} style={{ color: 'var(--text-secondary)' }} />
+                        <select
+                            value={selectedGroup}
+                            onChange={(e) => setSelectedGroup(e.target.value)}
+                            style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-primary)',
+                                fontSize: 14,
+                                fontWeight: 500,
+                                outline: 'none',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <option value="all">すべての団体 / グループ</option>
+                            {uniqueGroups.map(group => (
+                                <option key={group} value={group}>{group}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
+            </div>
+
+            {filteredCases.length === 0 ? (
                 <div className="glass-card" style={{ textAlign: 'center', padding: 60 }}>
                     <p style={{ color: 'var(--text-muted)', fontSize: 15 }}>ケースがありません</p>
                 </div>
