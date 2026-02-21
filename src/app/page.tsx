@@ -19,6 +19,10 @@ export default function UploadPage() {
     setIsDragging(false);
     const dropped = e.dataTransfer.files[0];
     if (dropped && /\.(xlsx?|csv)$/i.test(dropped.name)) {
+      if (dropped.name.startsWith('~$') || dropped.name.startsWith('_$')) {
+        setError('開いているファイルの一時データはアップロードできません。元のファイル（本体）を選択してください。');
+        return;
+      }
       setFile(dropped);
       if (!groupName) {
         setGroupName(dropped.name.replace(/\.(xlsx?|csv)$/i, ''));
@@ -31,6 +35,11 @@ export default function UploadPage() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (selected) {
+      if (selected.name.startsWith('~$') || selected.name.startsWith('_$')) {
+        setError('開いているファイルの一時データはアップロードできません。元のファイル（本体）を選択してください。');
+        setFile(null);
+        return;
+      }
       setFile(selected);
       if (!groupName) {
         setGroupName(selected.name.replace(/\.(xlsx?|csv)$/i, ''));
@@ -56,6 +65,10 @@ export default function UploadPage() {
       }, 500);
 
       const result = await uploadAndAnalyze(formData);
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
 
       clearInterval(interval);
       setProgress(100);

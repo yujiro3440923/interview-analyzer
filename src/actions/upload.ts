@@ -9,11 +9,11 @@ import { calculateRiskScore } from '@/lib/analysis/risk';
 import type { AppSettings } from '@/types';
 import { DEFAULT_SETTINGS } from '@/lib/analysis/dictionaries';
 
-export async function uploadAndAnalyze(formData: FormData): Promise<{ batchId: string }> {
+export async function uploadAndAnalyze(formData: FormData): Promise<{ batchId?: string; error?: string }> {
     const file = formData.get('file') as File;
     const groupName = (formData.get('groupName') as string) || 'default';
 
-    if (!file) throw new Error('ファイルが選択されていません');
+    if (!file) return { error: 'ファイルが選択されていません' };
 
     const filename = file.name;
     const arrayBuffer = await file.arrayBuffer();
@@ -180,6 +180,6 @@ export async function uploadAndAnalyze(formData: FormData): Promise<{ batchId: s
         return { batchId: batch.id };
     } catch (globalError) {
         console.error(`[Upload] FATAL ERROR during batch upload:`, globalError);
-        throw new Error('解析中にサーバーエラーが発生しました');
+        return { error: '解析中にサーバーエラーが発生しました（ファイルが破損しているか、対応していない形式の可能性があります）' };
     }
 }
