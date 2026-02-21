@@ -32,6 +32,11 @@ body {
   min-height: 100vh;
 }
 
+select option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-secondary); }
