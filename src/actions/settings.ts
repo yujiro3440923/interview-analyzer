@@ -10,14 +10,30 @@ export async function getSettings(groupName: string): Promise<AppSettings> {
         where: { groupName },
     });
 
-    if (!settings) return DEFAULT_SETTINGS;
+    let geminiApiKey = settings?.geminiApiKey || '';
+
+    // API Key Fallback: If not found for the specific group, try to use the 'default' group's key
+    if (!geminiApiKey && groupName !== 'default') {
+        const defaultSettings = await prisma.settings.findUnique({
+            where: { groupName: 'default' },
+            select: { geminiApiKey: true }
+        });
+        geminiApiKey = defaultSettings?.geminiApiKey || '';
+    }
+
+    if (!settings) {
+        return {
+            ...DEFAULT_SETTINGS,
+            geminiApiKey
+        };
+    }
 
     return {
         dict: (settings.dict as unknown as AppSettings['dict']) || DEFAULT_SETTINGS.dict,
         sentimentDict: (settings.sentimentDict as unknown as AppSettings['sentimentDict']) || DEFAULT_SETTINGS.sentimentDict,
         thresholds: (settings.thresholds as unknown as AppSettings['thresholds']) || DEFAULT_SETTINGS.thresholds,
         notifications: (settings.notifications as unknown as AppSettings['notifications']) || DEFAULT_SETTINGS.notifications,
-        geminiApiKey: settings.geminiApiKey || '',
+        geminiApiKey,
     };
 }
 
