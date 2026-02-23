@@ -28,7 +28,7 @@ interface Record {
     urgency: string;
     categoryMain: string | null;
     sentimentEvidence: { positiveHits: string[]; negativeHits: string[] } | null;
-    aiResult?: AIResult | null;
+    aiResult?: { resultJson: string } | null;
 }
 
 interface Case {
@@ -61,7 +61,7 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
         try {
             const res = await generateInterviewInsightAction(recordId);
             if (res.success && res.result) {
-                setLocalRecords(prev => prev.map(r => r.id === recordId ? { ...r, aiResult: res.result as unknown as AIResult } : r));
+                setLocalRecords(prev => prev.map(r => r.id === recordId ? { ...r, aiResult: { resultJson: res.result as string } } : r));
             } else {
                 alert('AI要約の生成に失敗しました: ' + res.error);
             }
@@ -259,6 +259,79 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                                 </h4>
                                             </div>
 
+                                            {(() => {
+                                                try {
+                                                    const aiData = typeof record.aiResult.resultJson === 'string'
+                                                        ? JSON.parse(record.aiResult.resultJson)
+                                                        : record.aiResult.resultJson;
+
+                                                    return (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                                            {/* Summary */}
+                                                            {aiData.summary && (
+                                                                <div>
+                                                                    <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>要約</h5>
+                                                                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>{aiData.summary}</p>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Key Points */}
+                                                            {aiData.key_points && aiData.key_points.length > 0 && (
+                                                                <div>
+                                                                    <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>重要なポイント</h5>
+                                                                    <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
+                                                                        {aiData.key_points.map((kp: any, i: number) => (
+                                                                            <li key={i} style={{ marginBottom: 4 }}>
+                                                                                <strong>{kp.point}</strong>
+                                                                                {kp.evidence_quote && <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginLeft: 8 }}>「{kp.evidence_quote}」</span>}
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Concerns */}
+                                                            {aiData.concerns && aiData.concerns.length > 0 && (
+                                                                <div>
+                                                                    <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 6 }}>懸念事項・リスク</h5>
+                                                                    <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
+                                                                        {aiData.concerns.map((c: any, i: number) => (
+                                                                            <li key={i} style={{ marginBottom: 4 }}>
+                                                                                <strong style={{ color: 'var(--accent-red)' }}>{c.concern}</strong>
+                                                                                {c.evidence_quote && <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginLeft: 8 }}>「{c.evidence_quote}」</span>}
+                                                                                {c.requires_confirmation && <span className="badge badge-yellow" style={{ marginLeft: 8, fontSize: 10 }}>要確認</span>}
+                                                                            </li>
+                                                                        ))}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
+
+                                                            {/* Next Questions / Actions */}
+                                                            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                                                                {aiData.next_questions && aiData.next_questions.length > 0 && (
+                                                                    <div style={{ flex: '1 1 200px' }}>
+                                                                        <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>次回確認すべき質問</h5>
+                                                                        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
+                                                                            {aiData.next_questions.map((q: string, i: number) => <li key={i}>{q}</li>)}
+                                                                        </ul>
+                                                                    </div>
+                                                                )}
+                                                                {aiData.follow_up_suggestions && aiData.follow_up_suggestions.length > 0 && (
+                                                                    <div style={{ flex: '1 1 200px' }}>
+                                                                        <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>推奨アクション</h5>
+                                                                        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
+                                                                            {aiData.follow_up_suggestions.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                                                                        </ul>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                } catch (e) {
+                                                    console.error("Failed to parse AI result JSON", e);
+                                                    return <div style={{ fontSize: 13, color: 'var(--accent-red)' }}>解析結果のフォーマットエラー</div>;
+                                                }
+                                            })()}
                                         </div>
                                     )}
                                 </div>
