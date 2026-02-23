@@ -105,6 +105,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
     sentimentDict: DEFAULT_SENTIMENT_DICT,
     thresholds: DEFAULT_THRESHOLDS,
     notifications: DEFAULT_NOTIFICATIONS,
+    geminiApiKey: '',
 };
 
 export const STOPWORDS = new Set([

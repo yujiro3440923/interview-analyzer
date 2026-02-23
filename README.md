@@ -89,7 +89,7 @@ npx prisma db push
 |---|---|
 | `DATABASE_URL` | PostgreSQL接続URL (Prisma用) |
 | `DIRECT_DATABASE_URL` | PostgreSQL直接接続URL (マイグレーション用) |
-| `GEMINI_API_KEY` | Gemini APIキー（AI要約・インサイト生成用） |
+| `GEMINI_API_KEY` | オプション: Gemini APIキー（未設定時は画面の管理設定から登録可能） |
 
 ---
 

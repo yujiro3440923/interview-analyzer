@@ -139,6 +139,7 @@ export interface AppSettings {
     sentimentDict: SentimentDict;
     thresholds: ThresholdSettings;
     notifications: NotificationSettings;
+    geminiApiKey: string;
 }
 
 // ===== Aggregation Types =====

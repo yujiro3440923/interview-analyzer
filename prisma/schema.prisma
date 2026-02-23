@@ -130,5 +130,6 @@ model Settings {
   sentimentDict Json?
   thresholds    Json?
   notifications Json?
+  geminiApiKey  String?
   updatedAt     DateTime @updatedAt
 }

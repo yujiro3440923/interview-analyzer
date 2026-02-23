@@ -1,9 +1,6 @@
 import { GoogleGenerativeAI, SchemaType, ResponseSchema } from '@google/generative-ai';
 import crypto from 'crypto';
 
-// Initialize Gemini API
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-
 export const A_SCHEMA: ResponseSchema = {
     type: SchemaType.OBJECT,
     properties: {
@@ -113,7 +110,9 @@ export function generateInputHash(input: string): string {
     return crypto.createHash('sha256').update(input).digest('hex');
 }
 
-export async function generateInterviewInsightRaw(text: string) {
+export async function generateInterviewInsightRaw(text: string, apiKey: string) {
+    if (!apiKey) throw new Error("Gemini API Key is not configured in Settings.");
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
         generationConfig: {
@@ -137,7 +136,9 @@ export async function generateInterviewInsightRaw(text: string) {
     return JSON.parse(responseText);
 }
 
-export async function generateBatchInsightRaw(statsText: string) {
+export async function generateBatchInsightRaw(statsText: string, apiKey: string) {
+    if (!apiKey) throw new Error("Gemini API Key is not configured in Settings.");
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
         model: "gemini-2.5-flash",
         generationConfig: {

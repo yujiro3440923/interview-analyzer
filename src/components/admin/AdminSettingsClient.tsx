@@ -27,6 +27,7 @@ export default function AdminSettingsClient({ groupName: initialGroup, settings:
     };
 
     const sections = [
+        { id: 'apikey', label: 'API連携' },
         { id: 'category', label: 'カテゴリ辞書' },
         { id: 'sentiment', label: '感情辞書' },
         { id: 'thresholds', label: '閾値設定' },
@@ -86,6 +87,12 @@ export default function AdminSettingsClient({ groupName: initialGroup, settings:
 
             {/* Section content */}
             <div className="glass-card">
+                {activeSection === 'apikey' && (
+                    <ApiKeyEditor
+                        apiKey={settings.geminiApiKey}
+                        onChange={(geminiApiKey) => setSettings({ ...settings, geminiApiKey })}
+                    />
+                )}
                 {activeSection === 'category' && (
                     <CategoryDictEditor
                         dict={settings.dict}
@@ -110,6 +117,39 @@ export default function AdminSettingsClient({ groupName: initialGroup, settings:
                         onChange={(notifications) => setSettings({ ...settings, notifications })}
                     />
                 )}
+            </div>
+        </div>
+    );
+}
+
+function ApiKeyEditor({ apiKey, onChange }: { apiKey: string; onChange: (key: string) => void }) {
+    const [showKey, setShowKey] = useState(false);
+
+    return (
+        <div>
+            <h3 style={{ fontWeight: 700, marginBottom: 16 }}>Gemini API連携</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>AI要約・インサイト生成機能を利用するためのAPIキーを設定します。</p>
+            <div style={{ maxWidth: 400 }}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+                    Gemini API Key
+                </label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <input
+                        className="input-field"
+                        type={showKey ? "text" : "password"}
+                        value={apiKey}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="AIzaSy..."
+                        style={{ flex: 1, fontFamily: 'monospace' }}
+                    />
+                    <button
+                        className="btn-secondary"
+                        style={{ padding: '8px 12px', fontSize: 12 }}
+                        onClick={() => setShowKey(!showKey)}
+                    >
+                        {showKey ? '隠す' : '表示'}
+                    </button>
+                </div>
             </div>
         </div>
     );

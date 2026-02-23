@@ -9,12 +9,13 @@ import {
     BATCH_PROMPT_VERSION
 } from '@/lib/ai/gemini';
 import { aggregateGroupStats } from '@/lib/aggregation/group';
+import { getSettings } from '@/actions/settings';
 
 export async function generateInterviewInsightAction(recordId: string) {
     // 1. Fetch the record
     const record = await prisma.interviewRecord.findUnique({
         where: { id: recordId },
-        include: { aiResult: true }
+        include: { aiResult: true, batch: { select: { groupName: true } } }
     });
 
     if (!record) {
@@ -34,9 +35,13 @@ export async function generateInterviewInsightAction(recordId: string) {
         return { success: true, result: record.aiResult.resultJson, message: 'Already up to date' };
     }
 
+    // Get API Key from settings (fallback to env)
+    const settings = await getSettings(record.batch.groupName);
+    const apiKey = settings.geminiApiKey || process.env.GEMINI_API_KEY || '';
+
     try {
         // 2. Call Gemini
-        const resultJson = await generateInterviewInsightRaw(textContext);
+        const resultJson = await generateInterviewInsightRaw(textContext, apiKey);
 
         // 3. Upsert into database
         const aiResult = await prisma.interviewAIResult.upsert({
@@ -118,9 +123,13 @@ export async function generateBatchInsightAction(batchId: string) {
         return { success: true, result: batch.aiInsight.resultJson, message: 'Already up to date' };
     }
 
+    // Get API Key from settings (fallback to env)
+    const settings = await getSettings(batch.groupName);
+    const apiKey = settings.geminiApiKey || process.env.GEMINI_API_KEY || '';
+
     try {
         // 3. Call Gemini
-        const resultJson = await generateBatchInsightRaw(inputContext);
+        const resultJson = await generateBatchInsightRaw(inputContext, apiKey);
 
         // 4. Upsert into DB
         const aiInsight = await prisma.batchAIInsight.upsert({

@@ -17,6 +17,7 @@ export async function getSettings(groupName: string): Promise<AppSettings> {
         sentimentDict: (settings.sentimentDict as unknown as AppSettings['sentimentDict']) || DEFAULT_SETTINGS.sentimentDict,
         thresholds: (settings.thresholds as unknown as AppSettings['thresholds']) || DEFAULT_SETTINGS.thresholds,
         notifications: (settings.notifications as unknown as AppSettings['notifications']) || DEFAULT_SETTINGS.notifications,
+        geminiApiKey: settings.geminiApiKey || '',
     };
 }
 
@@ -29,12 +30,14 @@ export async function saveSettings(groupName: string, settings: AppSettings) {
             sentimentDict: settings.sentimentDict as any,
             thresholds: settings.thresholds as any,
             notifications: settings.notifications as any,
+            geminiApiKey: settings.geminiApiKey || null,
         },
         update: {
             dict: settings.dict as any,
             sentimentDict: settings.sentimentDict as any,
             thresholds: settings.thresholds as any,
             notifications: settings.notifications as any,
+            geminiApiKey: settings.geminiApiKey || null,
         },
     });
 

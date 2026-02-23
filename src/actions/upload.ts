@@ -28,6 +28,7 @@ export async function uploadAndAnalyze(formData: FormData): Promise<{ batchId?: 
             sentimentDict: (savedSettings.sentimentDict as unknown as AppSettings['sentimentDict']) || DEFAULT_SETTINGS.sentimentDict,
             thresholds: (savedSettings.thresholds as unknown as AppSettings['thresholds']) || DEFAULT_SETTINGS.thresholds,
             notifications: (savedSettings.notifications as unknown as AppSettings['notifications']) || DEFAULT_SETTINGS.notifications,
+            geminiApiKey: savedSettings.geminiApiKey || '',
         };
     }
 
