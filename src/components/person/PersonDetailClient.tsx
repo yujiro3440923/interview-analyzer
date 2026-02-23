@@ -342,8 +342,8 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                                         <div style={{ fontSize: 13, color: 'var(--accent-red)' }}>
                                                             解析結果のフォーマットエラー: {e?.message || String(e)}<br />
                                                             <pre style={{ fontSize: 11, background: 'rgba(255,0,0,0.1)', marginTop: 8, whiteSpace: 'pre-wrap' }}>
-                                                                Type: {typeof record.aiResult?.resultJson}<br />
-                                                                Data: {JSON.stringify(record.aiResult?.resultJson).slice(0, 300)}
+                                                                Type: {typeof record.aiResult}<br />
+                                                                Data: {record.aiResult ? JSON.stringify(record.aiResult).slice(0, 300) : 'undefined'}
                                                             </pre>
                                                         </div>
                                                     );
