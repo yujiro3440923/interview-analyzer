@@ -252,22 +252,29 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
 
                                     {/* AI Insight Results */}
                                     {record.aiResult && (
-                                        <div style={{ marginTop: 16, background: 'rgba(124, 58, 237, 0.05)', borderRadius: 12, padding: 16, border: '1px solid rgba(124, 58, 237, 0.2)' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                                <h4 style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-purple, #7c3aed)', margin: 0 }}>
-                                                    <Sparkles size={16} /> AI 要約・インサイト
+                                        <div style={{ marginTop: 24, paddingTop: 24, borderTop: '1px solid var(--border-light)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                                                <h4 style={{ fontSize: 16, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--accent-purple, #7c3aed)', margin: 0 }}>
+                                                    <Sparkles size={18} /> AI インサイト・分析結果
                                                 </h4>
                                             </div>
 
                                             {(() => {
                                                 try {
-                                                    let aiData = typeof record.aiResult.resultJson === 'string'
-                                                        ? JSON.parse(record.aiResult.resultJson)
-                                                        : record.aiResult.resultJson;
+                                                    let aiData: any = null;
 
-                                                    // Client-side nested result workaround
-                                                    if (aiData && aiData.resultJson) {
-                                                        aiData = typeof aiData.resultJson === 'string' ? JSON.parse(aiData.resultJson) : aiData.resultJson;
+                                                    // 1. Check if record.aiResult is already the parsed object (Client-side fast update)
+                                                    if (record.aiResult && !('resultJson' in record.aiResult)) {
+                                                        aiData = record.aiResult;
+                                                    }
+                                                    // 2. Check if it's the Prisma object with resultJson
+                                                    else if (record.aiResult && 'resultJson' in record.aiResult) {
+                                                        const resultJson = (record.aiResult as any).resultJson;
+                                                        if (typeof resultJson === 'string') {
+                                                            aiData = JSON.parse(resultJson);
+                                                        } else {
+                                                            aiData = resultJson;
+                                                        }
                                                     }
 
                                                     if (!aiData || typeof aiData !== 'object') {
@@ -275,61 +282,77 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                                     }
 
                                                     return (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                                                            {/* Summary */}
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                                            {/* Summary Card */}
                                                             {aiData.summary && (
-                                                                <div>
-                                                                    <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>要約</h5>
-                                                                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>{aiData.summary}</p>
+                                                                <div style={{ background: 'rgba(124, 58, 237, 0.08)', borderRadius: 12, padding: 20, border: '1px solid rgba(124, 58, 237, 0.2)' }}>
+                                                                    <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-purple)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Summary</h5>
+                                                                    <p style={{ fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.6, margin: 0 }}>{aiData.summary}</p>
                                                                 </div>
                                                             )}
 
-                                                            {/* Key Points */}
-                                                            {Array.isArray(aiData.key_points) && aiData.key_points.length > 0 && (
-                                                                <div>
-                                                                    <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>重要なポイント</h5>
-                                                                    <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
-                                                                        {aiData.key_points.map((kp: any, i: number) => (
-                                                                            <li key={i} style={{ marginBottom: 4 }}>
-                                                                                <strong>{kp.point}</strong>
-                                                                                {kp.evidence_quote && <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginLeft: 8 }}>「{kp.evidence_quote}」</span>}
-                                                                            </li>
-                                                                        ))}
-                                                                    </ul>
-                                                                </div>
-                                                            )}
+                                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+                                                                {/* Key Points */}
+                                                                {Array.isArray(aiData.key_points) && aiData.key_points.length > 0 && (
+                                                                    <div className="glass-card" style={{ padding: 20, margin: 0 }}>
+                                                                        <h5 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                            <span style={{ width: 4, height: 16, background: 'var(--accent-blue)', borderRadius: 2 }} />
+                                                                            重要なポイント
+                                                                        </h5>
+                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                                                            {aiData.key_points.map((kp: any, i: number) => (
+                                                                                <div key={i} style={{ fontSize: 13 }}>
+                                                                                    <strong style={{ color: 'var(--text-primary)', display: 'block', marginBottom: 4 }}>・{kp.point}</strong>
+                                                                                    {kp.evidence_quote && <span style={{ color: 'var(--text-muted)', display: 'block', paddingLeft: 14, fontStyle: 'italic' }}>「{kp.evidence_quote}」</span>}
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
 
-                                                            {/* Concerns */}
-                                                            {Array.isArray(aiData.concerns) && aiData.concerns.length > 0 && (
-                                                                <div>
-                                                                    <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 6 }}>懸念事項・リスク</h5>
-                                                                    <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
-                                                                        {aiData.concerns.map((c: any, i: number) => (
-                                                                            <li key={i} style={{ marginBottom: 4 }}>
-                                                                                <strong style={{ color: 'var(--accent-red)' }}>{c.concern}</strong>
-                                                                                {c.evidence_quote && <span style={{ color: 'var(--text-muted)', fontStyle: 'italic', marginLeft: 8 }}>「{c.evidence_quote}」</span>}
-                                                                                {c.requires_confirmation && <span className="badge badge-yellow" style={{ marginLeft: 8, fontSize: 10 }}>要確認</span>}
-                                                                            </li>
-                                                                        ))}
-                                                                    </ul>
-                                                                </div>
-                                                            )}
+                                                                {/* Concerns */}
+                                                                {Array.isArray(aiData.concerns) && aiData.concerns.length > 0 && (
+                                                                    <div className="glass-card" style={{ padding: 20, margin: 0, border: '1px solid rgba(239, 68, 68, 0.2)', background: 'rgba(239, 68, 68, 0.03)' }}>
+                                                                        <h5 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                            <span style={{ width: 4, height: 16, background: 'var(--accent-red)', borderRadius: 2 }} />
+                                                                            懸念事項・リスク
+                                                                        </h5>
+                                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                                                                            {aiData.concerns.map((c: any, i: number) => (
+                                                                                <div key={i} style={{ fontSize: 13 }}>
+                                                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
+                                                                                        <strong style={{ color: 'var(--accent-red)' }}>・{c.concern}</strong>
+                                                                                        {c.requires_confirmation && <span className="badge badge-yellow" style={{ fontSize: 10, padding: '2px 6px' }}>要確認</span>}
+                                                                                    </div>
+                                                                                    {c.evidence_quote && <span style={{ color: 'var(--text-muted)', display: 'block', paddingLeft: 14, fontStyle: 'italic' }}>「{c.evidence_quote}」</span>}
+                                                                                </div>
+                                                                            ))}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
 
                                                             {/* Next Questions / Actions */}
-                                                            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                                                            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                                                                 {Array.isArray(aiData.next_questions) && aiData.next_questions.length > 0 && (
-                                                                    <div style={{ flex: '1 1 200px' }}>
-                                                                        <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>次回確認すべき質問</h5>
+                                                                    <div className="glass-card" style={{ flex: '1 1 300px', padding: 20, margin: 0 }}>
+                                                                        <h5 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                            <span style={{ width: 4, height: 16, background: 'var(--accent-green)', borderRadius: 2 }} />
+                                                                            次回確認すべき質問
+                                                                        </h5>
                                                                         <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
-                                                                            {aiData.next_questions.map((q: string, i: number) => <li key={i}>{typeof q === 'string' ? q : JSON.stringify(q)}</li>)}
+                                                                            {aiData.next_questions.map((q: string, i: number) => <li key={i} style={{ marginBottom: 6 }}>{typeof q === 'string' ? q : JSON.stringify(q)}</li>)}
                                                                         </ul>
                                                                     </div>
                                                                 )}
                                                                 {Array.isArray(aiData.follow_up_suggestions) && aiData.follow_up_suggestions.length > 0 && (
-                                                                    <div style={{ flex: '1 1 200px' }}>
-                                                                        <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>推奨アクション</h5>
+                                                                    <div className="glass-card" style={{ flex: '1 1 300px', padding: 20, margin: 0 }}>
+                                                                        <h5 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                                                                            <span style={{ width: 4, height: 16, background: 'var(--accent-blue)', borderRadius: 2 }} />
+                                                                            推奨アクション
+                                                                        </h5>
                                                                         <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
-                                                                            {aiData.follow_up_suggestions.map((s: string, i: number) => <li key={i}>{typeof s === 'string' ? s : JSON.stringify(s)}</li>)}
+                                                                            {aiData.follow_up_suggestions.map((s: string, i: number) => <li key={i} style={{ marginBottom: 6 }}>{typeof s === 'string' ? s : JSON.stringify(s)}</li>)}
                                                                         </ul>
                                                                     </div>
                                                                 )}
@@ -339,11 +362,11 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                                 } catch (e: any) {
                                                     console.error("Failed to parse AI result JSON", e);
                                                     return (
-                                                        <div style={{ fontSize: 13, color: 'var(--accent-red)' }}>
-                                                            解析結果のフォーマットエラー: {e?.message || String(e)}<br />
-                                                            <pre style={{ fontSize: 11, background: 'rgba(255,0,0,0.1)', marginTop: 8, whiteSpace: 'pre-wrap' }}>
+                                                        <div style={{ fontSize: 13, color: 'var(--accent-red)', padding: 16, background: 'rgba(239, 68, 68, 0.1)', borderRadius: 8 }}>
+                                                            <strong>解析結果のフォーマットエラー:</strong> {e?.message || String(e)}<br />
+                                                            <pre style={{ fontSize: 11, background: 'rgba(0,0,0,0.2)', padding: 12, borderRadius: 6, marginTop: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
                                                                 Type: {typeof record.aiResult}<br />
-                                                                Data: {record.aiResult ? JSON.stringify(record.aiResult).slice(0, 300) : 'undefined'}
+                                                                Data: {record.aiResult ? JSON.stringify(record.aiResult).slice(0, 500) : 'undefined'}
                                                             </pre>
                                                         </div>
                                                     );
