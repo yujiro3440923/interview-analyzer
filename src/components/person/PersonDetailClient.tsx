@@ -327,9 +327,17 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                                             </div>
                                                         </div>
                                                     );
-                                                } catch (e) {
+                                                } catch (e: any) {
                                                     console.error("Failed to parse AI result JSON", e);
-                                                    return <div style={{ fontSize: 13, color: 'var(--accent-red)' }}>解析結果のフォーマットエラー</div>;
+                                                    return (
+                                                        <div style={{ fontSize: 13, color: 'var(--accent-red)' }}>
+                                                            解析結果のフォーマットエラー: {e?.message || String(e)}<br />
+                                                            <pre style={{ fontSize: 11, background: 'rgba(255,0,0,0.1)', marginTop: 8, whiteSpace: 'pre-wrap' }}>
+                                                                Type: {typeof record.aiResult?.resultJson}<br />
+                                                                Data: {JSON.stringify(record.aiResult?.resultJson).slice(0, 300)}
+                                                            </pre>
+                                                        </div>
+                                                    );
                                                 }
                                             })()}
                                         </div>
