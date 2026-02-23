@@ -44,6 +44,7 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ id
             },
             records: true,
             cases: { include: { person: true } },
+            aiInsight: true,
         },
     });
 
@@ -120,6 +121,7 @@ export default async function BatchDetailPage({ params }: { params: Promise<{ id
             persons={personsList}
             phases={phases}
             openCases={openCases}
+            aiInsight={batch.aiInsight?.resultJson as any}
         />
     );
 }

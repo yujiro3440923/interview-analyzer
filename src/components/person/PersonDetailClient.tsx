@@ -5,9 +5,18 @@ import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import {
-    Shield, AlertTriangle, Clock, Calendar, User, MessageSquare, ChevronDown, ChevronUp
+    Shield, AlertTriangle, Clock, Calendar, User, MessageSquare, ChevronDown, ChevronUp, Sparkles, Loader2
 } from 'lucide-react';
 import { updateCaseStatus } from '@/actions/cases';
+import { generateInterviewInsightAction } from '@/actions/ai';
+
+interface AIResult {
+    summary: string;
+    key_points: { point: string; evidence_quote: string }[];
+    concerns: { concern: string; evidence_quote: string; requires_confirmation: boolean }[];
+    next_questions: string[];
+    follow_up_suggestions: string[];
+}
 
 interface Record {
     id: string;
@@ -19,6 +28,7 @@ interface Record {
     urgency: string;
     categoryMain: string | null;
     sentimentEvidence: { positiveHits: string[]; negativeHits: string[] } | null;
+    aiResult?: AIResult | null;
 }
 
 interface Case {
@@ -43,9 +53,28 @@ interface Props {
 
 export default function PersonDetailClient({ person, records, cases, insight }: Props) {
     const [expandedRecord, setExpandedRecord] = useState<string | null>(null);
+    const [isGeneratingAI, setIsGeneratingAI] = useState<{ [key: string]: boolean }>({});
+    const [localRecords, setLocalRecords] = useState(records);
+
+    const handleGenerateAI = async (recordId: string) => {
+        setIsGeneratingAI((prev: { [key: string]: boolean }) => ({ ...prev, [recordId]: true }));
+        try {
+            const res = await generateInterviewInsightAction(recordId);
+            if (res.success && res.result) {
+                setLocalRecords(prev => prev.map(r => r.id === recordId ? { ...r, aiResult: res.result as unknown as AIResult } : r));
+            } else {
+                alert('AI要約の生成に失敗しました: ' + res.error);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('エラーが発生しました');
+        } finally {
+            setIsGeneratingAI((prev: { [key: string]: boolean }) => ({ ...prev, [recordId]: false }));
+        }
+    };
 
     // Sentiment trend
-    const sentimentData = records
+    const sentimentData = localRecords
         .filter((r) => r.date && r.sentimentScore != null)
         .map((r) => ({
             date: r.date!.split('T')[0],
@@ -140,9 +169,9 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
             <div style={{ marginBottom: 24 }}>
                 <h3 style={{ fontWeight: 700, fontSize: 16, marginBottom: 16 }}>📝 面談タイムライン</h3>
                 <div style={{ borderLeft: '2px solid var(--border-color)', paddingLeft: 8, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {records.map((record) => (
-                        <div key={record.id} className="timeline-card" onClick={() => setExpandedRecord(expandedRecord === record.id ? null : record.id)} style={{ cursor: 'pointer' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    {localRecords.map((record) => (
+                        <div key={record.id} className="timeline-card" style={{ cursor: 'pointer' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }} onClick={() => setExpandedRecord(expandedRecord === record.id ? null : record.id)}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                     <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
                                         <Calendar size={12} style={{ display: 'inline', marginRight: 4 }} />
@@ -187,7 +216,7 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                         </div>
                                     )}
                                     {record.sentimentEvidence && (
-                                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                                        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>
                                             {record.sentimentEvidence.positiveHits?.length > 0 && (
                                                 <span style={{ color: 'var(--accent-green)', marginRight: 12 }}>
                                                     ポジティブ: {record.sentimentEvidence.positiveHits.join(', ')}
@@ -200,6 +229,87 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                             )}
                                         </div>
                                     )}
+
+                                    {/* AI Insight Section */}
+                                    <div style={{ marginTop: 16, background: 'rgba(124, 58, 237, 0.05)', borderRadius: 12, padding: 16, border: '1px solid rgba(124, 58, 237, 0.2)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                                            <h4 style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-purple, #7c3aed)', margin: 0 }}>
+                                                <Sparkles size={16} /> AI 要約・インサイト
+                                            </h4>
+                                            {!record.aiResult && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleGenerateAI(record.id); }}
+                                                    disabled={isGeneratingAI[record.id]}
+                                                    className="btn btn-primary"
+                                                    style={{ padding: '6px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-purple, #7c3aed)', border: 'none' }}
+                                                >
+                                                    {isGeneratingAI[record.id] ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                                    {isGeneratingAI[record.id] ? '生成中...' : 'AI要約を生成'}
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {record.aiResult && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                                                <div>
+                                                    <div style={{ fontSize: 12, fontWeight: 700, color: '#444', marginBottom: 4 }}>全体要約</div>
+                                                    <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{record.aiResult.summary}</p>
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
+                                                    <div>
+                                                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-blue)', marginBottom: 8 }}>📌 重要なポイント</div>
+                                                        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                            {record.aiResult.key_points.map((kp, i) => (
+                                                                <li key={i}>
+                                                                    <div style={{ fontWeight: 500 }}>{kp.point}</div>
+                                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, background: 'rgba(0,0,0,0.03)', padding: '4px 8px', borderRadius: 4, fontStyle: 'italic' }}>
+                                                                        &quot;{kp.evidence_quote}&quot;
+                                                                    </div>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+
+                                                    <div>
+                                                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 8 }}>⚠️ 懸念点・リスク</div>
+                                                        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                                            {record.aiResult.concerns.map((c, i) => (
+                                                                <li key={i}>
+                                                                    <div style={{ fontWeight: 500 }}>
+                                                                        {c.concern}
+                                                                        {c.requires_confirmation && <span style={{ marginLeft: 6, fontSize: 10, background: 'var(--accent-yellow)', color: '#000', padding: '2px 6px', borderRadius: 4 }}>要確認</span>}
+                                                                    </div>
+                                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, background: 'rgba(0,0,0,0.03)', padding: '4px 8px', borderRadius: 4, fontStyle: 'italic' }}>
+                                                                        &quot;{c.evidence_quote}&quot;
+                                                                    </div>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
+                                                    {record.aiResult.next_questions?.length > 0 && (
+                                                        <div>
+                                                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-yellow)', marginBottom: 8 }}>❓ 次回の確認質問案</div>
+                                                            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
+                                                                {record.aiResult.next_questions.map((q, i) => <li key={i}>{q}</li>)}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                    {record.aiResult.follow_up_suggestions?.length > 0 && (
+                                                        <div>
+                                                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-green)', marginBottom: 8 }}>💡 フォロー案・次アクション</div>
+                                                            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
+                                                                {record.aiResult.follow_up_suggestions.map((s, i) => <li key={i}>{s}</li>)}
+                                                            </ul>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </div>

@@ -21,9 +21,25 @@ model UploadBatch {
   persons Person[]
   records InterviewRecord[]
   cases   Case[]
+  aiInsight BatchAIInsight?
 
   @@index([groupName])
   @@index([uploadDate])
+}
+
+model BatchAIInsight {
+  id            String      @id @default(cuid())
+  batchId       String      @unique
+  batch         UploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  resultJson    Json
+  model         String
+  promptVersion String
+  temperature   Float
+  topP          Float
+  inputHash     String
+  createdAt     DateTime    @default(now())
+
+  @@index([batchId])
 }
 
 model Person {
@@ -65,11 +81,27 @@ model InterviewRecord {
   batchId             String
   batch               UploadBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
   createdAt           DateTime @default(now())
+  aiResult            InterviewAIResult?
 
   @@index([batchId])
   @@index([personId])
   @@index([date])
   @@index([urgency])
+}
+
+model InterviewAIResult {
+  id                String          @id @default(cuid())
+  interviewRecordId String          @unique
+  record            InterviewRecord @relation(fields: [interviewRecordId], references: [id], onDelete: Cascade)
+  resultJson        Json
+  model             String
+  promptVersion     String
+  temperature       Float
+  topP              Float
+  inputHash         String
+  createdAt         DateTime        @default(now())
+
+  @@index([interviewRecordId])
 }
 
 model Case {

@@ -16,6 +16,7 @@ interface PersonRecord {
     sentimentEvidence: unknown;
     urgency: string;
     categoryMain: string | null;
+    aiResult?: any | null;
 }
 
 interface PersonCase {
@@ -33,7 +34,7 @@ export default async function PersonDetailPage({ params }: { params: Promise<{ i
     const person = await prisma.person.findUnique({
         where: { id },
         include: {
-            records: { orderBy: { date: 'desc' } },
+            records: { include: { aiResult: true }, orderBy: { date: 'desc' } },
             cases: { orderBy: { createdAt: 'desc' } },
         },
     });
@@ -85,6 +86,7 @@ export default async function PersonDetailPage({ params }: { params: Promise<{ i
                 urgency: r.urgency,
                 categoryMain: r.categoryMain,
                 sentimentEvidence: r.sentimentEvidence as SentimentEvidence | null,
+                aiResult: r.aiResult?.resultJson as any,
             }))}
             cases={cases.map((c) => ({
                 id: c.id,

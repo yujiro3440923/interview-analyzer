@@ -8,9 +8,17 @@ import {
 } from 'recharts';
 import {
     Users, FileText, TrendingDown, AlertTriangle, Search,
-    ArrowUpRight, Shield
+    ArrowUpRight, Shield, Sparkles, Loader2
 } from 'lucide-react';
 import type { GroupStats, PhaseData } from '@/types';
+import { generateBatchInsightAction } from '@/actions/ai';
+
+export interface AIInsight {
+    overall_summary: string;
+    hot_topics: { topic: string; description: string; representative_record_ids: string[] }[];
+    deltas: { metric: string; change: string }[];
+    priority_alerts: { alert: string; representative_record_ids: string[] }[];
+}
 
 interface PersonItem {
     id: string;
@@ -27,19 +35,41 @@ interface Props {
     persons: PersonItem[];
     phases: PhaseData[] | null;
     openCases: { id: string; person: { name: string }; status: string; createdAt: string }[];
+    aiInsight: AIInsight | null;
 }
 
 const CATEGORY_COLORS = ['#3b82f6', '#ef4444', '#f59e0b', '#ec4899', '#10b981', '#8b5cf6', '#6b7280'];
 
-export default function GroupReportClient({ batchId, groupName, stats, persons, phases, openCases }: Props) {
-    const [activeTab, setActiveTab] = useState('trend');
+export default function GroupReportClient({ batchId, groupName, stats, persons, phases, openCases, aiInsight }: Props) {
+    const [activeTab, setActiveTab] = useState(aiInsight ? 'ai' : 'trend');
     const [searchQuery, setSearchQuery] = useState('');
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+    const [localInsight, setLocalInsight] = useState<AIInsight | null>(aiInsight);
+
+    const handleGenerateAI = async () => {
+        setIsGeneratingAI(true);
+        try {
+            const res = await generateBatchInsightAction(batchId);
+            if (res.success && res.result) {
+                setLocalInsight(res.result as unknown as AIInsight);
+                setActiveTab('ai');
+            } else {
+                alert('AIインサイトの生成に失敗しました: ' + res.error);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('エラーが発生しました');
+        } finally {
+            setIsGeneratingAI(false);
+        }
+    };
 
     const filteredPersons = persons.filter((p) =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const tabs = [
+        { id: 'ai', label: 'AIインサイト', icon: <Sparkles size={14} style={{ marginRight: 6 }} /> },
         { id: 'trend', label: '推移' },
         { id: 'category', label: 'カテゴリ' },
         { id: 'keywords', label: 'キーワード' },
@@ -76,20 +106,36 @@ export default function GroupReportClient({ batchId, groupName, stats, persons, 
             </div>
 
             {/* Tabs */}
-            <div className="tab-group" style={{ marginBottom: 24 }}>
-                {tabs.map((tab) => (
+            <div className="tab-group" style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    {tabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+                            onClick={() => setActiveTab(tab.id)}
+                            style={tab.id === 'ai' && activeTab === 'ai' ? { background: 'var(--accent-purple)', color: '#fff', borderColor: 'var(--accent-purple)' } : {}}
+                        >
+                            {tab.icon && tab.icon}
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+                {!localInsight && (
                     <button
-                        key={tab.id}
-                        className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
-                        onClick={() => setActiveTab(tab.id)}
+                        onClick={handleGenerateAI}
+                        disabled={isGeneratingAI}
+                        className="btn btn-primary"
+                        style={{ padding: '8px 16px', fontSize: 13, background: 'var(--accent-purple)', display: 'flex', alignItems: 'center', gap: 6 }}
                     >
-                        {tab.label}
+                        {isGeneratingAI ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                        バッチ全体のAIインサイトを生成
                     </button>
-                ))}
+                )}
             </div>
 
             {/* Tab content */}
             <div className="glass-card" style={{ marginBottom: 32, minHeight: 400 }}>
+                {activeTab === 'ai' && <AITab insight={localInsight} />}
                 {activeTab === 'trend' && <TrendTab data={stats.trendData} />}
                 {activeTab === 'category' && <CategoryTab distribution={stats.categoryDistribution} />}
                 {activeTab === 'keywords' && <KeywordsTab keywords={stats.topKeywords} />}
@@ -311,6 +357,76 @@ function EmptyState({ message }: { message: string }) {
     return (
         <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)', fontSize: 15 }}>
             {message}
+        </div>
+    );
+}
+
+function AITab({ insight }: { insight: AIInsight | null }) {
+    if (!insight) return <EmptyState message="AIインサイトはまだ生成されていません。右上の「生成」ボタンを押してください。" />;
+
+    return (
+        <div style={{ padding: 8 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent-purple)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+                <Sparkles size={20} /> AI バッチインサイト
+            </h3>
+
+            <div style={{ marginBottom: 32 }}>
+                <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>📋 全体要約</h4>
+                <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, background: 'var(--bg-secondary)', padding: '16px', borderRadius: 12 }}>
+                    {insight.overall_summary}
+                </p>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginBottom: 32 }}>
+                <div>
+                    <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 12 }}>🚨 重点アラート</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {insight.priority_alerts.length > 0 ? insight.priority_alerts.map((alert, i) => (
+                            <div key={i} style={{ padding: 16, borderRadius: 12, border: '1px solid var(--accent-red)', background: 'rgba(239, 68, 68, 0.05)' }}>
+                                <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8 }}>{alert.alert}</div>
+                                {alert.representative_record_ids?.length > 0 && (
+                                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                                        代表ID: {alert.representative_record_ids.join(', ')}
+                                    </div>
+                                )}
+                            </div>
+                        )) : <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>重点的なアラートはありません</div>}
+                    </div>
+                </div>
+
+                <div>
+                    <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-yellow)', marginBottom: 12 }}>📈 前回からの差分・変化</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {insight.deltas.length > 0 ? insight.deltas.map((delta, i) => (
+                            <div key={i} style={{ padding: 16, borderRadius: 12, border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: 14, fontWeight: 500 }}>{delta.metric}</span>
+                                <span style={{ fontSize: 14, color: 'var(--accent-blue)', fontWeight: 700 }}>{delta.change}</span>
+                            </div>
+                        )) : <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>有意な差分・変化は検出されませんでした</div>}
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-blue)', marginBottom: 12 }}>🔥 ホットトピック Top 5</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                    {insight.hot_topics.map((topic, i) => (
+                        <div key={i} style={{ padding: 16, borderRadius: 12, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>
+                                {i + 1}. {topic.topic}
+                            </div>
+                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 12, lineHeight: 1.5 }}>
+                                {topic.description}
+                            </p>
+                            {topic.representative_record_ids?.length > 0 && (
+                                <div style={{ fontSize: 11, color: 'var(--text-muted)', background: 'rgba(0,0,0,0.05)', padding: '4px 8px', borderRadius: 6 }}>
+                                    代表ID: {topic.representative_record_ids.join(', ')}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }

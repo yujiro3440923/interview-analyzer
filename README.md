@@ -8,7 +8,7 @@
 - **Styling**: Tailwind CSS
 - **Database**: PostgreSQL (Vercel Postgres) + Prisma ORM
 - **Charts**: Recharts
-- **NLP**: Kuromoji（形態素解析）
+- **NLP**: Kuromoji（形態素解析）, Gemini API（自動要約・インサイト生成）
 - **File Parsing**: exceljs + papaparse
 
 ## ローカル起動
@@ -89,6 +89,7 @@ npx prisma db push
 |---|---|
 | `DATABASE_URL` | PostgreSQL接続URL (Prisma用) |
 | `DIRECT_DATABASE_URL` | PostgreSQL直接接続URL (マイグレーション用) |
+| `GEMINI_API_KEY` | Gemini APIキー（AI要約・インサイト生成用） |
 
 ---
 
