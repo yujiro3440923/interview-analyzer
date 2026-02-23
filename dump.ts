@@ -1,0 +1,1 @@
+import { PrismaClient } from '@prisma/client'; const prisma = new PrismaClient(); async function main() { const results = await prisma.interviewAIResult.findMany({ take: 1 }); require('fs').writeFileSync('ai_data.json', JSON.stringify(results[0]?.resultJson, null, 2)); } main().finally(() => prisma.$disconnect());

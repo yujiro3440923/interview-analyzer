@@ -61,7 +61,7 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
         try {
             const res = await generateInterviewInsightAction(recordId);
             if (res.success && res.result) {
-                setLocalRecords(prev => prev.map(r => r.id === recordId ? { ...r, aiResult: { resultJson: res.result as string } } : r));
+                setLocalRecords(prev => prev.map(r => r.id === recordId ? { ...r, aiResult: res.result as any } : r));
             } else {
                 alert('AI要約の生成に失敗しました: ' + res.error);
             }
@@ -261,9 +261,18 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
 
                                             {(() => {
                                                 try {
-                                                    const aiData = typeof record.aiResult.resultJson === 'string'
+                                                    let aiData = typeof record.aiResult.resultJson === 'string'
                                                         ? JSON.parse(record.aiResult.resultJson)
                                                         : record.aiResult.resultJson;
+
+                                                    // Client-side nested result workaround
+                                                    if (aiData && aiData.resultJson) {
+                                                        aiData = typeof aiData.resultJson === 'string' ? JSON.parse(aiData.resultJson) : aiData.resultJson;
+                                                    }
+
+                                                    if (!aiData || typeof aiData !== 'object') {
+                                                        throw new Error("Invalid format: " + JSON.stringify(aiData));
+                                                    }
 
                                                     return (
                                                         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -276,7 +285,7 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                                             )}
 
                                                             {/* Key Points */}
-                                                            {aiData.key_points && aiData.key_points.length > 0 && (
+                                                            {Array.isArray(aiData.key_points) && aiData.key_points.length > 0 && (
                                                                 <div>
                                                                     <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>重要なポイント</h5>
                                                                     <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -291,7 +300,7 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                                             )}
 
                                                             {/* Concerns */}
-                                                            {aiData.concerns && aiData.concerns.length > 0 && (
+                                                            {Array.isArray(aiData.concerns) && aiData.concerns.length > 0 && (
                                                                 <div>
                                                                     <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 6 }}>懸念事項・リスク</h5>
                                                                     <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
@@ -308,19 +317,19 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
 
                                                             {/* Next Questions / Actions */}
                                                             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                                                                {aiData.next_questions && aiData.next_questions.length > 0 && (
+                                                                {Array.isArray(aiData.next_questions) && aiData.next_questions.length > 0 && (
                                                                     <div style={{ flex: '1 1 200px' }}>
                                                                         <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>次回確認すべき質問</h5>
                                                                         <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
-                                                                            {aiData.next_questions.map((q: string, i: number) => <li key={i}>{q}</li>)}
+                                                                            {aiData.next_questions.map((q: string, i: number) => <li key={i}>{typeof q === 'string' ? q : JSON.stringify(q)}</li>)}
                                                                         </ul>
                                                                     </div>
                                                                 )}
-                                                                {aiData.follow_up_suggestions && aiData.follow_up_suggestions.length > 0 && (
+                                                                {Array.isArray(aiData.follow_up_suggestions) && aiData.follow_up_suggestions.length > 0 && (
                                                                     <div style={{ flex: '1 1 200px' }}>
                                                                         <h5 style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>推奨アクション</h5>
                                                                         <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
-                                                                            {aiData.follow_up_suggestions.map((s: string, i: number) => <li key={i}>{s}</li>)}
+                                                                            {aiData.follow_up_suggestions.map((s: string, i: number) => <li key={i}>{typeof s === 'string' ? s : JSON.stringify(s)}</li>)}
                                                                         </ul>
                                                                     </div>
                                                                 )}
