@@ -207,6 +207,22 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                 {!expandedRecord && (record.content || '').length > 100 && '...'}
                             </p>
 
+                            {/* AI Insight Button (Always visible) */}
+                            {!record.aiResult && (
+                                <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); handleGenerateAI(record.id); }}
+                                        disabled={isGeneratingAI[record.id]}
+                                        className="btn btn-primary"
+                                        style={{ padding: '6px 16px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-purple, #7c3aed)', border: 'none', borderRadius: 20 }}
+                                    >
+                                        {isGeneratingAI[record.id] ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                                        {isGeneratingAI[record.id] ? 'AI解析中...' : '自動要約・推測・対策を生成'}
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Expanded Details Section */}
                             {expandedRecord === record.id && (
                                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-color)' }}>
                                     {record.action && (
@@ -230,86 +246,17 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                         </div>
                                     )}
 
-                                    {/* AI Insight Section */}
-                                    <div style={{ marginTop: 16, background: 'rgba(124, 58, 237, 0.05)', borderRadius: 12, padding: 16, border: '1px solid rgba(124, 58, 237, 0.2)' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                                            <h4 style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-purple, #7c3aed)', margin: 0 }}>
-                                                <Sparkles size={16} /> AI 要約・インサイト
-                                            </h4>
-                                            {!record.aiResult && (
-                                                <button
-                                                    onClick={(e) => { e.stopPropagation(); handleGenerateAI(record.id); }}
-                                                    disabled={isGeneratingAI[record.id]}
-                                                    className="btn btn-primary"
-                                                    style={{ padding: '6px 12px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6, background: 'var(--accent-purple, #7c3aed)', border: 'none' }}
-                                                >
-                                                    {isGeneratingAI[record.id] ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                                                    {isGeneratingAI[record.id] ? '生成中...' : 'AI要約を生成'}
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        {record.aiResult && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                                                <div>
-                                                    <div style={{ fontSize: 12, fontWeight: 700, color: '#444', marginBottom: 4 }}>全体要約</div>
-                                                    <p style={{ margin: 0, fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{record.aiResult.summary}</p>
-                                                </div>
-
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
-                                                    <div>
-                                                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-blue)', marginBottom: 8 }}>📌 重要なポイント</div>
-                                                        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                                            {record.aiResult.key_points.map((kp, i) => (
-                                                                <li key={i}>
-                                                                    <div style={{ fontWeight: 500 }}>{kp.point}</div>
-                                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, background: 'rgba(0,0,0,0.03)', padding: '4px 8px', borderRadius: 4, fontStyle: 'italic' }}>
-                                                                        &quot;{kp.evidence_quote}&quot;
-                                                                    </div>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-
-                                                    <div>
-                                                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-red)', marginBottom: 8 }}>⚠️ 懸念点・リスク</div>
-                                                        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                                            {record.aiResult.concerns.map((c, i) => (
-                                                                <li key={i}>
-                                                                    <div style={{ fontWeight: 500 }}>
-                                                                        {c.concern}
-                                                                        {c.requires_confirmation && <span style={{ marginLeft: 6, fontSize: 10, background: 'var(--accent-yellow)', color: '#000', padding: '2px 6px', borderRadius: 4 }}>要確認</span>}
-                                                                    </div>
-                                                                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, background: 'rgba(0,0,0,0.03)', padding: '4px 8px', borderRadius: 4, fontStyle: 'italic' }}>
-                                                                        &quot;{c.evidence_quote}&quot;
-                                                                    </div>
-                                                                </li>
-                                                            ))}
-                                                        </ul>
-                                                    </div>
-                                                </div>
-
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
-                                                    {record.aiResult.next_questions?.length > 0 && (
-                                                        <div>
-                                                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-yellow)', marginBottom: 8 }}>❓ 次回の確認質問案</div>
-                                                            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
-                                                                {record.aiResult.next_questions.map((q, i) => <li key={i}>{q}</li>)}
-                                                            </ul>
-                                                        </div>
-                                                    )}
-                                                    {record.aiResult.follow_up_suggestions?.length > 0 && (
-                                                        <div>
-                                                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-green)', marginBottom: 8 }}>💡 フォロー案・次アクション</div>
-                                                            <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--text-secondary)' }}>
-                                                                {record.aiResult.follow_up_suggestions.map((s, i) => <li key={i}>{s}</li>)}
-                                                            </ul>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                    {/* AI Insight Results */}
+                                    {record.aiResult && (
+                                        <div style={{ marginTop: 16, background: 'rgba(124, 58, 237, 0.05)', borderRadius: 12, padding: 16, border: '1px solid rgba(124, 58, 237, 0.2)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                                <h4 style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--accent-purple, #7c3aed)', margin: 0 }}>
+                                                    <Sparkles size={16} /> AI 要約・インサイト
+                                                </h4>
                                             </div>
-                                        )}
-                                    </div>
+
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
