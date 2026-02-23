@@ -207,9 +207,9 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                 {!expandedRecord && (record.content || '').length > 100 && '...'}
                             </p>
 
-                            {/* AI Insight Button (Always visible) */}
-                            {!record.aiResult && (
-                                <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                            {/* Action button bar (always visible at bottom) */}
+                            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', borderTop: '1px dashed var(--border-color)', paddingTop: 12 }}>
+                                {!record.aiResult ? (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleGenerateAI(record.id); }}
                                         disabled={isGeneratingAI[record.id]}
@@ -219,8 +219,12 @@ export default function PersonDetailClient({ person, records, cases, insight }: 
                                         {isGeneratingAI[record.id] ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
                                         {isGeneratingAI[record.id] ? 'AI解析中...' : '自動要約・推測・対策を生成'}
                                     </button>
-                                </div>
-                            )}
+                                ) : (
+                                    <div style={{ fontSize: 12, color: 'var(--accent-purple)', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
+                                        <Sparkles size={14} /> AI分析完了（展開して確認）
+                                    </div>
+                                )}
+                            </div>
 
                             {/* Expanded Details Section */}
                             {expandedRecord === record.id && (
